@@ -2,6 +2,11 @@ spring:
   profiles:
     active: local
 
+# JWT: 운영에서는 반드시 JWT_SECRET 환경변수로 덮어쓴다 (32byte 이상, HS256 요구사항).
+jwt:
+  secret: ${JWT_SECRET:local-dev-only-secret-key-please-change-0123456789}
+  expiration-ms: 3600000 # 1시간
+
 ---
 # 로컬 개발: 인메모리 H2. docker-compose/RDS 없이 바로 기동 확인용.
 spring:
