@@ -1,0 +1,41 @@
+spring:
+  profiles:
+    active: local
+
+---
+# 로컬 개발: 인메모리 H2. docker-compose/RDS 없이 바로 기동 확인용.
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:h2:mem:habitpet;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+
+---
+# 운영: AWS RDS(MySQL) 가정. 값은 전부 환경변수로 주입 (ECS 태스크 정의 등에서 설정).
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false

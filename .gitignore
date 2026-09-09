@@ -1,0 +1,19 @@
+# Backend (Maven / Spring Boot)
+backend/target/
+backend/.mvn/
+!backend/.mvn/wrapper/maven-wrapper.properties
+
+# Frontend (Node / React) - 4단계에서 생성 예정
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.local
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
