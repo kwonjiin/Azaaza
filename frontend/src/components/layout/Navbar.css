@@ -1,0 +1,31 @@
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+}
+
+.navbar-link {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  padding: 6px 0;
+  border-bottom: 2px solid transparent;
+}
+
+.navbar-link.active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-primary);
+}
