@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Optional;
 
 /**
  * 발급/검증을 한곳에 모은 JWT 유틸.
@@ -44,17 +45,17 @@ public class JwtTokenProvider {
         return expirationMs / 1000;
     }
 
-    public Long getUserId(String token) {
-        Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
-        return Long.valueOf(claims.getSubject());
-    }
-
-    public boolean isValid(String token) {
+    /**
+     * 검증 + subject 추출을 한 번의 파싱으로 끝낸다. 예전엔 isValid()와 getUserId()가
+     * 별도 메서드라 필터가 둘 다 호출했는데, 그러면 같은 토큰의 서명을 요청마다 두 번
+     * 검증하는 꼴이었다 — 인증된 모든 요청에서 HMAC 검증 비용이 두 배로 드는 셈이라 합쳤다.
+     */
+    public Optional<Long> resolveUserId(String token) {
         try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
-            return true;
+            Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+            return Optional.of(Long.valueOf(claims.getSubject()));
         } catch (JwtException | IllegalArgumentException e) {
-            return false;
+            return Optional.empty();
         }
     }
 }

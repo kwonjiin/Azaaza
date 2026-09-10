@@ -4,30 +4,26 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import useAuth from "../../hooks/useAuth";
+import useSubmit from "../../hooks/useSubmit";
 import "./AuthPage.css";
 
 export default function SignupPage() {
   const { signup } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "", nickname: "" });
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const { submit, submitting, error } = useSubmit(signup);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
-    setError(null);
     try {
-      await signup(form);
+      await submit(form);
       // 회원가입은 토큰을 안 내려주므로(POST /auth/signup 응답에 accessToken 없음, API.md 참고)
       // 여기서 자동 로그인하지 않고, 로그인 페이지로 보내 같은 자격증명으로 다시 로그인하게 한다.
       navigate("/login", { replace: true });
-    } catch (err) {
-      setError(err);
-    } finally {
-      setSubmitting(false);
+    } catch {
+      // 에러는 useSubmit이 이미 담아뒀다.
     }
   };
 

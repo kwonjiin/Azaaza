@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Button from "../../components/common/Button";
 import ErrorMessage from "../../components/common/ErrorMessage";
+import useSubmit from "../../hooks/useSubmit";
 import { createHabitRecord } from "../../services/habitRecordService";
 import { todayISO } from "../../utils/date";
 
@@ -10,24 +11,18 @@ import { todayISO } from "../../utils/date";
  */
 export default function HabitRecordAction({ habit }) {
   const [actualValue, setActualValue] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const { submit, submitting, error } = useSubmit((payload) => createHabitRecord(habit.id, payload));
 
   const handleRecord = async (completed) => {
-    setSubmitting(true);
-    setError(null);
     try {
       const payload = { date: todayISO(), completed };
       if (habit.targetType === "NUMBER") {
         payload.actualValue = Number(actualValue);
       }
-      const record = await createHabitRecord(habit.id, payload);
-      setResult(record);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setSubmitting(false);
+      setResult(await submit(payload));
+    } catch {
+      // 에러는 useSubmit이 이미 담아뒀다.
     }
   };
 

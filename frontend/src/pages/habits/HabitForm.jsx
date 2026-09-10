@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Button from "../../components/common/Button";
 import ErrorMessage from "../../components/common/ErrorMessage";
+import useSubmit from "../../hooks/useSubmit";
 
 const CATEGORIES = [
   { value: "HEALTH", label: "건강" },
@@ -42,15 +43,12 @@ export default function HabitForm({ animals, initial, onSubmit, onCancel, submit
         }
       : { ...emptyForm, animalId: animals[0]?.id ?? "" }
   );
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const { submit, submitting, error } = useSubmit(onSubmit);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
-    setError(null);
     try {
       const payload = {
         ...form,
@@ -58,10 +56,9 @@ export default function HabitForm({ animals, initial, onSubmit, onCancel, submit
         targetValue: form.targetType === "NUMBER" ? Number(form.targetValue) : undefined,
         targetUnit: form.targetType === "NUMBER" ? form.targetUnit : undefined,
       };
-      await onSubmit(payload);
-    } catch (err) {
-      setError(err);
-      setSubmitting(false);
+      await submit(payload);
+    } catch {
+      // 에러는 useSubmit이 이미 담아뒀다 — 폼은 그대로 열어둔 채 사용자가 고쳐 다시 낼 수 있게 한다.
     }
   };
 

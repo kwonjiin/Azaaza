@@ -205,6 +205,8 @@
 ```
 
 ### GET /api/diaries?animalId=1&from=2026-09-01&to=2026-09-09
+`animalId`/`from`/`to` 모두 선택. `from`/`to`를 생략하면 오늘까지 최근 30일로 기본값이 채워진다.
+
 ### GET /api/diaries/{diaryId}
 
 ---

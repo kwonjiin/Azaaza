@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import Button from "../../components/common/Button";
+import ErrorMessage from "../../components/common/ErrorMessage";
+import useSubmit from "../../hooks/useSubmit";
 import HabitForm, { CATEGORIES } from "./HabitForm";
 import HabitRecordAction from "./HabitRecordAction";
 import { updateHabit, deleteHabit } from "../../services/habitService";
@@ -8,7 +10,7 @@ const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.labe
 
 export default function HabitListItem({ habit, animals, onChanged }) {
   const [editing, setEditing] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const { submit: submitDelete, submitting: deleting, error: deleteError } = useSubmit(deleteHabit);
 
   const handleUpdate = async (payload) => {
     await updateHabit(habit.id, payload);
@@ -18,12 +20,11 @@ export default function HabitListItem({ habit, animals, onChanged }) {
 
   const handleDelete = async () => {
     if (!window.confirm(`"${habit.title}" 습관을 삭제할까요? 그동안의 기록도 함께 사라져요.`)) return;
-    setDeleting(true);
     try {
-      await deleteHabit(habit.id);
+      await submitDelete(habit.id);
       onChanged();
     } catch {
-      setDeleting(false);
+      // 예전엔 여기서 에러를 그냥 삼켰다 — 이제 useSubmit이 담아둔 걸 아래 ErrorMessage로 보여준다.
     }
   };
 
@@ -59,6 +60,7 @@ export default function HabitListItem({ habit, animals, onChanged }) {
           </Button>
         </div>
       </div>
+      <ErrorMessage error={deleteError} />
       <HabitRecordAction habit={habit} />
     </li>
   );

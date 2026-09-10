@@ -12,6 +12,7 @@ import com.azaaza.habitpet.global.exception.ErrorCode;
 import com.azaaza.habitpet.repository.HabitRecordRepository;
 import com.azaaza.habitpet.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,7 +52,14 @@ public class HabitRecordService {
                 .completed(request.completed())
                 .actualValue(request.actualValue())
                 .build();
-        habitRecordRepository.save(record);
+        try {
+            // existsBy 체크와 이 save() 사이에는 여전히 race window가 있다(동시 요청 두 개가
+            // 둘 다 체크를 통과할 수 있음). 그래서 DB 유니크 제약(uk_habit_record_habit_date)이
+            // 최종 방어선이고, 그게 걸렸을 때 500이 아니라 문서화된 409로 변환해주는 게 이 catch다.
+            habitRecordRepository.save(record);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.DUPLICATE_RECORD);
+        }
 
         // 완수하지 못한 기록(사실 그대로 남기는 것도 의미가 있다)에는 보상을 주지 않는다 —
         // "동기부여 장치"라는 컨셉상 포인트가 곧 신뢰도를 담보해야 하기 때문.

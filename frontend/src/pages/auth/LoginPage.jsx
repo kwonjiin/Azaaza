@@ -4,28 +4,24 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import useAuth from "../../hooks/useAuth";
+import useSubmit from "../../hooks/useSubmit";
 import "./AuthPage.css";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const { submit, submitting, error } = useSubmit(login);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
-    setError(null);
     try {
-      await login(form);
+      await submit(form);
       navigate("/dashboard", { replace: true });
-    } catch (err) {
-      setError(err);
-    } finally {
-      setSubmitting(false);
+    } catch {
+      // 에러는 useSubmit이 이미 담아뒀다 — 여기선 성공했을 때 할 일만 신경 쓴다.
     }
   };
 

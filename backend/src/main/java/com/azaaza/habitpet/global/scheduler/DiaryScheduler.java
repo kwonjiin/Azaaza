@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 /**
  * 매일 새벽 4시, 방금 끝난 하루(어제)에 대한 일기를 전체 동물 대상으로 생성한다.
@@ -19,12 +20,16 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class DiaryScheduler {
 
+    // 배포 환경의 JVM 기본 타임존이 KST가 아닐 수 있어(클라우드 기본값은 대개 UTC) 명시한다.
+    // cron의 zone 속성과 "어제" 계산에 쓰는 기준 시각이 어긋나면 안 되므로 둘 다 이 상수를 쓴다.
+    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
+
     private final DiaryService diaryService;
 
-    @Scheduled(cron = "0 0 4 * * *")
+    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
     public void generateYesterdayDiaries() {
-        LocalDate targetDate = LocalDate.now().minusDays(1);
-        int animalCount = diaryService.generateForDate(targetDate);
-        log.info("[DiaryScheduler] {}자 일기 생성 배치 완료 — 대상 동물 {}마리", targetDate, animalCount);
+        LocalDate targetDate = LocalDate.now(ZONE).minusDays(1);
+        int diaryCount = diaryService.generateForDate(targetDate);
+        log.info("[DiaryScheduler] {}자 일기 생성 배치 완료 — 확보된 일기 {}건", targetDate, diaryCount);
     }
 }

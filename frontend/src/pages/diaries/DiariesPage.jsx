@@ -5,29 +5,25 @@ import Button from "../../components/common/Button";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import useFetch from "../../hooks/useFetch";
+import useSubmit from "../../hooks/useSubmit";
 import { getDiaries, generateTodayDiaries } from "../../services/diaryService";
 import { getMyAnimals } from "../../services/animalService";
 
 export default function DiariesPage() {
   const [animalId, setAnimalId] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState(null);
 
   const { data: animals } = useFetch(useCallback(() => getMyAnimals(), []));
   const { data: diaries, loading, error, refetch } = useFetch(
     useCallback(() => getDiaries({ animalId: animalId || undefined }), [animalId])
   );
+  const { submit: submitGenerate, submitting: generating, error: generateError } = useSubmit(generateTodayDiaries);
 
   const handleGenerate = async () => {
-    setGenerating(true);
-    setGenerateError(null);
     try {
-      await generateTodayDiaries();
+      await submitGenerate();
       refetch();
-    } catch (err) {
-      setGenerateError(err);
-    } finally {
-      setGenerating(false);
+    } catch {
+      // 에러는 useSubmit이 이미 담아뒀다.
     }
   };
 

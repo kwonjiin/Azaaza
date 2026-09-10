@@ -31,12 +31,14 @@ public class DiaryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(diaryService.generateToday(userId));
     }
 
+    // from/to를 생략하면 서비스가 최근 30일로 기본값을 채운다 — 프론트의 "전체 기간" 조회가
+    // 매번 400을 내던 문제 수정 (필수 파라미터였을 때는 DiariesPage가 이 값을 넘긴 적이 없었다).
     @GetMapping
     public ResponseEntity<List<DiaryResponse>> search(
             @LoginUser Long userId,
             @RequestParam(required = false) Long animalId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(diaryService.search(userId, animalId, from, to));
     }
 
