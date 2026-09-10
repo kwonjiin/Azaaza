@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 /**
  * 동물이 그날의 습관 수행 결과를 바탕으로 남기는 일기.
  * (animal_id, date) 유니크 제약으로 "동물당 하루 1개"를 DB에서 보장한다.
- * 생성 로직(템플릿 조합)은 DiaryService에서 다룬다 — 3/6단계 참고.
+ * 생성 로직은 DiaryService(언제/누구 것을)와 DiaryContentGenerator(문장 조립)로 나뉜다.
  */
 @Getter
 @Entity

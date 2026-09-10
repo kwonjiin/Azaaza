@@ -24,7 +24,8 @@ public class DiaryController {
 
     private final DiaryService diaryService;
 
-    /** 스케줄러(6단계) 또는 수동 테스트에서 호출하는 멱등 트리거. */
+    /** 수동/테스트 트리거 — 호출한 사용자의 동물만 대상으로 "오늘" 일기를 멱등 생성한다.
+     *  전체 사용자 대상 자동 생성은 DiaryScheduler(매일 새벽 4시)가 담당한다. */
     @PostMapping("/generate-today")
     public ResponseEntity<List<DiaryResponse>> generateToday(@LoginUser Long userId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(diaryService.generateToday(userId));

@@ -16,12 +16,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * 일기 생성의 뼈대만 이번 단계에서 잡는다. 문장 템플릿/감정 분기 같은 콘텐츠 로직은
- * 6단계에서 별도 컴포넌트(DiaryContentGenerator)로 확장할 예정 — 지금은 최소 동작 버전.
+ * 일기 저장/조회(멱등 생성, 검색, 상세 조회)를 다룬다. 문장 조립 로직은
+ * DiaryContentGenerator로 분리돼 있다 — 여기서는 "언제, 누구 것을" 만들지만 결정한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -32,29 +36,42 @@ public class DiaryService {
     private final HabitRepository habitRepository;
     private final HabitRecordRepository habitRecordRepository;
     private final DiaryRepository diaryRepository;
+    private final DiaryContentGenerator diaryContentGenerator;
 
     @Transactional
     public List<DiaryResponse> generateToday(Long userId) {
-        // NOTE: 실제로 새벽 4시 배치라면 "오늘"이 아니라 방금 끝난 하루(어제)를 정리하는 게
-        // 자연스럽다. 지금은 수동/테스트 트리거 편의를 위해 호출 당일 기준으로 둔다 — 6단계에서 재논의.
-        LocalDate targetDate = LocalDate.now();
-
+        // 수동/테스트 트리거는 "오늘" 기준이 직관적이라 그대로 둔다. 새벽 배치는 "방금 끝난
+        // 하루(어제)"를 정리해야 하므로 별도 경로(generateForDate)를 스케줄러 전용으로 둔다.
         List<Animal> animals = animalRepository.findAllByUser_Id(userId);
         return animals.stream()
-                .map(animal -> getOrCreateDiary(animal, targetDate))
+                .map(animal -> getOrCreateDiary(animal, LocalDate.now()))
                 .map(DiaryResponse::from)
                 .toList();
     }
 
+    /** 매일 새벽 4시 배치(DiaryScheduler)에서 호출 — 전체 사용자의 동물을 대상으로 지정한 날짜의 일기를 만든다. */
+    @Transactional
+    public int generateForDate(LocalDate targetDate) {
+        List<Animal> animals = animalRepository.findAll();
+        animals.forEach(animal -> getOrCreateDiary(animal, targetDate));
+        return animals.size();
+    }
+
     private Diary getOrCreateDiary(Animal animal, LocalDate date) {
-        // 멱등성: 이미 오늘자 일기가 있으면 그걸 그대로 반환하고 새로 만들지 않는다.
+        // 멱등성: 이미 그날 일기가 있으면 그걸 그대로 반환하고 새로 만들지 않는다.
         Optional<Diary> existing = diaryRepository.findByAnimal_IdAndDate(animal.getId(), date);
         if (existing.isPresent()) {
             return existing.get();
         }
 
         List<Habit> habits = habitRepository.findAllByAnimal_Id(animal.getId());
-        String content = buildContent(animal, habits, date);
+        Map<Long, HabitRecord> recordsByHabitId = habits.isEmpty()
+                ? Collections.emptyMap()
+                : habitRecordRepository
+                        .findAllByHabit_IdInAndDateBetween(habits.stream().map(Habit::getId).toList(), date, date)
+                        .stream()
+                        .collect(Collectors.toMap(r -> r.getHabit().getId(), Function.identity()));
+        String content = diaryContentGenerator.generate(habits, recordsByHabitId);
 
         Diary diary = Diary.builder()
                 .animal(animal)
@@ -62,29 +79,6 @@ public class DiaryService {
                 .content(content)
                 .build();
         return diaryRepository.save(diary);
-    }
-
-    private String buildContent(Animal animal, List<Habit> habits, LocalDate date) {
-        if (habits.isEmpty()) {
-            return "오늘은 아직 같이 시작한 습관이 없어서 조용한 하루였다.";
-        }
-
-        long completedCount = habits.stream()
-                .filter(habit -> habitRecordRepository.findByHabit_IdAndDate(habit.getId(), date)
-                        .map(HabitRecord::isCompleted)
-                        .orElse(false))
-                .count();
-
-        StringBuilder sb = new StringBuilder();
-        for (Habit habit : habits) {
-            boolean completed = habitRecordRepository.findByHabit_IdAndDate(habit.getId(), date)
-                    .map(HabitRecord::isCompleted)
-                    .orElse(false);
-            sb.append("오늘 주인님이 ").append(habit.getTitle())
-                    .append(completed ? "을 완수해서 나도 기분이 좋았다. " : "을 아직 안 해서 조금 아쉬웠다. ");
-        }
-        sb.append(String.format("오늘 습관 %d개 중 %d개를 해냈다.", habits.size(), completedCount));
-        return sb.toString();
     }
 
     public List<DiaryResponse> search(Long userId, Long animalId, LocalDate from, LocalDate to) {
